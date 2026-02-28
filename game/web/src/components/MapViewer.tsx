@@ -55,7 +55,13 @@ export default function MapViewer({
   const rebuildPendingRef = useRef(false);
 
   // Height → color mapping (blue → cyan → green → yellow → red)
-  const heightToColor = useCallback((h: number): [number, number, number] => {
+  const heightToColor = useCallback((h: number, dist?: number): [number, number, number] => {
+    // For flat data (z near 0), use distance-based coloring instead
+    if (Math.abs(h) < 0.5 && dist !== undefined) {
+      const t = Math.max(0, Math.min(1, dist / 10.0));
+      if (t < 0.33) { const s = t / 0.33; return [0.2, 0.6 + 0.4 * s, 1.0]; }
+      if (t < 0.66) { const s = (t - 0.33) / 0.33; return [0.2 + 0.6 * s, 1.0, 1.0 - s]; }
+      const s = (t - 0.66) / 0.34; return [0.8 + 0.2 * s, 1.0 - 0.4 * s, 0]; }
     const t = Math.max(0, Math.min(1, (h - -1.0) / (3.0 - -1.0)));
     if (t < 0.25) { const s = t / 0.25; return [0, s, 1]; }
     if (t < 0.5) { const s = (t - 0.25) / 0.25; return [0, 1, 1 - s]; }
@@ -84,7 +90,8 @@ export default function MapViewer({
       positions[i * 3 + 1] = p.z;
       positions[i * 3 + 2] = p.y;
 
-      const [r, g, b] = heightToColor(p.z);
+      const dist = Math.sqrt(p.x * p.x + p.y * p.y);
+      const [r, g, b] = heightToColor(p.z, dist);
       colors[i * 4] = r;
       colors[i * 4 + 1] = g;
       colors[i * 4 + 2] = b;
@@ -104,7 +111,7 @@ export default function MapViewer({
     mat.emissiveColor = new Color3(1, 1, 1);
     mat.disableLighting = true;
     mat.pointsCloud = true;
-    mat.pointSize = 3;
+    mat.pointSize = 5;
     // @ts-expect-error — useVertexColors exists on StandardMaterial
     mat.useVertexColors = true;
     mesh.material = mat;
@@ -138,13 +145,13 @@ export default function MapViewer({
 
     // Camera
     const camera = new ArcRotateCamera(
-      "camera", -Math.PI / 4, Math.PI / 3, 10,
+      "camera", -Math.PI / 4, Math.PI / 6, 15,
       Vector3.Zero(), scene
     );
     camera.attachControl(canvas, true);
     camera.lowerRadiusLimit = 1;
-    camera.upperRadiusLimit = 50;
-    camera.wheelPrecision = 20;
+    camera.upperRadiusLimit = 80;
+    camera.wheelPrecision = 10;
 
     // Light
     const light = new HemisphericLight("light", new Vector3(0, 1, 0), scene);

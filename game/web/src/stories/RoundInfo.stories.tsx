@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import RoundInfo from "../components/RoundInfo";
-import type { GameState, RoundResult } from "../types";
+import type { GameState } from "../types";
 import "../App.css";
 
 const baseState: GameState = {

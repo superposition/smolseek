@@ -10,7 +10,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Cache, GameState, RoundResult } from "../types";
 import { MSG } from "../types";
 
-const GAME_WS_PORT = 8081;
+const GAME_WS_PORT = new URLSearchParams(window.location.search).get("ws_port")
+  ? parseInt(new URLSearchParams(window.location.search).get("ws_port")!)
+  : 8081;
 const RECONNECT_MS = 3000;
 
 export interface PointCloudData {

@@ -13,12 +13,6 @@ const mockCache: Cache = {
   collected_by: null,
 };
 
-const mockCollected: Cache = {
-  ...mockCache,
-  id: "cache_1",
-  collected: true,
-  collected_by: "bob",
-};
 
 const lobbyState: GameState = {
   phase: "LOBBY",
