@@ -14,9 +14,12 @@
   "dependencies": {
     "@babylonjs/core": "^8.53.0",
     "@babylonjs/gui": "^8.53.0",
+    "@tanstack/react-query": "^5.90.21",
     "geist": "^1.7.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "viem": "^2.46.3",
+    "wagmi": "^3.5.0"
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^5.0.1",

@@ -10,6 +10,7 @@ import TransactionStatus from "../components/TransactionStatus";
 import EscrowPool from "../components/EscrowPool";
 import ConnectionBadge from "../components/ConnectionBadge";
 import MockMapViewer from "../components/MockMapViewer";
+import CameraFeed from "../components/CameraFeed";
 import type { ConnState } from "../components/ConnectionBadge";
 import "../App.css";
 
@@ -122,6 +123,15 @@ function MockGameLayout({
             selectedCacheId={selectedCacheId}
             onCacheSelect={setSelectedCacheId}
           />
+          {/* Camera feed top-right */}
+          <div style={{
+            position: "absolute",
+            top: 12,
+            right: 12,
+            zIndex: 2,
+          }}>
+            <CameraFeed rosbridgeUrl="ws://192.168.0.221:9090" />
+          </div>
           {/* Escrow overlay bottom-left */}
           <div style={{
             position: "absolute",
