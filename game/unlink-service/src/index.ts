@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import { getUnlink, getEscrowAddress } from "./escrow.js";
+import { getUnlink, getEscrowAddress, syncUnlink } from "./escrow.js";
 import bidRouter from "./routes/bid.js";
 import distributeRouter from "./routes/distribute.js";
 import balanceRouter from "./routes/balance.js";
@@ -19,6 +19,16 @@ app.use("/balance", balanceRouter);
 // Health check
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", service: "smolseek-unlink" });
+});
+
+// Sync — re-scan relay for incoming transfers
+app.get("/sync", async (_req, res) => {
+  try {
+    await syncUnlink();
+    res.json({ status: "synced" });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Escrow address (convenience top-level route)
@@ -43,6 +53,7 @@ async function main() {
     console.log(`  POST /bid          - verify a private bid`);
     console.log(`  POST /distribute   - send winnings to winner`);
     console.log(`  GET  /balance      - escrow balance`);
+    console.log(`  GET  /sync         - re-sync incoming transfers`);
     console.log(`  GET  /escrow-address - escrow Unlink address`);
     console.log(`  GET  /health       - health check`);
   });

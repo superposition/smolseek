@@ -26,12 +26,14 @@ This skill wraps the smolseek Unlink escrow service (`game/unlink-service/`) as 
 | Asset | Decimals | Description |
 |-------|----------|-------------|
 | MON   | 18       | Native Monad testnet token |
+| ERC20 | 18       | Any Unlink-supported ERC20 (set `ESCROW_TOKEN`) |
 
 ## What it does
 
 - **Health check**: verify the service is running and display escrow summary
 - **Address lookup**: get the escrow wallet's Unlink address
-- **Balance queries**: check MON balance, with optional game-pool combined view
+- **Balance queries**: check token balance, with optional game-pool combined view
+- **Sync**: re-scan the relay for incoming transfers (needed after external sends)
 - **Bid verification**: confirm that a player's private bid landed in escrow (ZK proof verification)
 - **Bid listing**: list all confirmed bids for a game round, sorted by amount
 - **Prize distribution**: send winnings from escrow to a winner's address (with double-send protection)
@@ -135,6 +137,14 @@ Sends MON tokens from escrow to the winner. Includes double-send protection — 
 **Required args:** `--recipient`, `--amount` (in wei)
 **Optional args:** `--round` (defaults to 0)
 
+### unlink-sync.sh — Sync incoming transfers
+
+```bash
+scripts/unlink-sync.sh
+```
+
+Re-scans the Unlink relay for incoming transfers. Call this after sending tokens to the escrow from an external wallet (e.g. `unlink-cli send`) to ensure the balance is up to date.
+
 ### unlink-pool.sh — Game pool info
 
 ```bash
@@ -148,9 +158,18 @@ Returns combined escrow address and balance as JSON. Convenience wrapper for age
 - [API Endpoints](references/api-endpoints.md) — REST endpoint reference with request/response schemas
 - [Unlink SDK](references/unlink-sdk.md) — `@unlink-xyz/node` SDK reference
 
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `UNLINK_SERVICE_URL` | `http://localhost:3001` | Base URL of the escrow service |
+| `UNLINK_MNEMONIC` | *(none)* | Import existing wallet (omit for fresh wallet) |
+| `ESCROW_TOKEN` | `0xaaa4...df6b` | Token address for escrow operations |
+
 ## Notes
 
 - All amounts are in **wei** (18 decimals). 1 MON = 1000000000000000000 wei.
 - The escrow wallet is persisted in `escrow.db` (SQLite) alongside the service.
 - Bid and distribution records are stored in `bids.db` (SQLite).
+- After sending tokens externally, call `unlink-sync.sh` before checking balance.
 - For privacy safety: never commit `.env` files or database files to git.

@@ -1,8 +1,8 @@
 import { initUnlink, createSqliteStorage, waitForConfirmation } from "@unlink-xyz/node";
 import type { Unlink } from "@unlink-xyz/node";
 
-// Monad testnet MON token address
-export const MON_TOKEN = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+// Monad testnet token address (ERC20 available via faucet)
+export const MON_TOKEN = process.env.ESCROW_TOKEN ?? "0xaaa4e95d4da878baf8e10745fdf26e196918df6b";
 
 let unlink: Unlink;
 
@@ -71,6 +71,11 @@ export async function distribute(
     ],
   });
   return { relayId: result.relayId };
+}
+
+export async function syncUnlink(): Promise<void> {
+  const u = await getUnlink();
+  await u.sync();
 }
 
 export async function getBalance(): Promise<bigint> {
