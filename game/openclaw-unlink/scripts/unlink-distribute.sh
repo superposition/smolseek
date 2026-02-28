@@ -26,7 +26,7 @@ if [[ -z "$RECIPIENT" || -z "$AMOUNT" ]]; then
   usage
 fi
 
-HTTP_CODE=$(curl -sf -o /tmp/unlink-distribute-response.json -w '%{http_code}' \
+HTTP_CODE=$(curl -s -o /tmp/unlink-distribute-response.json -w '%{http_code}' \
   "$BASE/distribute" \
   -H "Content-Type: application/json" \
   -d "{\"recipientAddress\":\"$RECIPIENT\",\"amount\":\"$AMOUNT\",\"round\":$ROUND}" \

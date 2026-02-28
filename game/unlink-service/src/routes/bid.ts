@@ -30,7 +30,7 @@ const getBidsForRound = db.prepare(
 
 // POST /bid - verify a private bid landed in escrow
 router.post("/", async (req, res) => {
-  const { relayId, playerId, cacheId, round } = req.body;
+  const { relayId, playerId, cacheId, round, amount } = req.body;
 
   if (!relayId || !playerId || !cacheId) {
     res.status(400).json({ error: "Missing relayId, playerId, or cacheId" });
@@ -38,15 +38,16 @@ router.post("/", async (req, res) => {
   }
 
   try {
-    const { confirmed, amount } = await verifyBid(relayId);
+    const { confirmed } = await verifyBid(relayId);
+    const bidAmount = amount ?? "0";
 
     if (confirmed) {
-      insertBid.run(relayId, playerId, cacheId, amount.toString(), round ?? 0, 1);
+      insertBid.run(relayId, playerId, cacheId, bidAmount.toString(), round ?? 0, 1);
     }
 
     res.json({
       confirmed,
-      amount: amount.toString(),
+      amount: bidAmount.toString(),
       relayId,
       bidId: relayId,
     });
