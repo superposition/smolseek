@@ -32,6 +32,15 @@ export interface NavStatus {
   distance_remaining: number;
 }
 
+export interface MapStatus {
+  total_points: number;
+  total_keyframes: number;
+  tracking_state: string;
+  elapsed_seconds: number;
+  has_pose: boolean;
+  robot_position?: { x: number; y: number; z: number };
+}
+
 interface GameSocketState {
   connected: boolean;
   gameState: GameState | null;
@@ -39,6 +48,7 @@ interface GameSocketState {
   roundResult: RoundResult | null;
   robotTarget: RobotTarget | null;
   navStatus: NavStatus | null;
+  mapStatus: MapStatus | null;
 }
 
 export function useGameSocket() {
@@ -50,6 +60,7 @@ export function useGameSocket() {
     roundResult: null,
     robotTarget: null,
     navStatus: null,
+    mapStatus: null,
   });
 
   // Callbacks for components that need raw binary data (MapViewer)
@@ -132,9 +143,11 @@ export function useGameSocket() {
             trajectoryCb.current?.(new Float32Array(payload));
             break;
 
-          case MSG.STATUS:
-            // Map status (0x04) — could expose if needed
+          case MSG.STATUS: {
+            const ms = parseJSON<MapStatus>(payload);
+            if (ms) setState((s) => ({ ...s, mapStatus: ms }));
             break;
+          }
 
           case MSG.GAME_STATE: {
             const gs = parseJSON<GameState>(payload);
