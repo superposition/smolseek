@@ -1,0 +1,156 @@
+---
+name: unlink
+description: >
+  Privacy-preserving payment operations for the smolseek game on Monad testnet.
+  Use this skill to interact with the Unlink escrow service: check escrow health
+  and balance, verify private bids from players, list confirmed bids per round,
+  and distribute winnings to winners. All transactions use ZK proofs via the
+  Unlink protocol — sender, amount, and recipient are hidden on-chain.
+  Requires the unlink-service to be running (default localhost:3001).
+metadata:
+  clawdbot:
+    emoji: "\U0001F510"
+    homepage: "https://unlink.xyz"
+    requires:
+      bins:
+        - curl
+        - jq
+---
+
+# Unlink
+
+This skill wraps the smolseek Unlink escrow service (`game/unlink-service/`) as agent-friendly shell scripts. The service manages privacy-preserving payments on Monad testnet using the `@unlink-xyz/node` SDK.
+
+## Supported Assets
+
+| Asset | Decimals | Description |
+|-------|----------|-------------|
+| MON   | 18       | Native Monad testnet token |
+
+## What it does
+
+- **Health check**: verify the service is running and display escrow summary
+- **Address lookup**: get the escrow wallet's Unlink address
+- **Balance queries**: check MON balance, with optional game-pool combined view
+- **Bid verification**: confirm that a player's private bid landed in escrow (ZK proof verification)
+- **Bid listing**: list all confirmed bids for a game round, sorted by amount
+- **Prize distribution**: send winnings from escrow to a winner's address (with double-send protection)
+- **Pool info**: get combined escrow address + balance in one call
+
+## Setup
+
+### 1) Start the Unlink service
+
+```bash
+cd game/unlink-service
+npm install
+npm run dev
+```
+
+The service runs on `http://localhost:3001` by default. Verify with:
+
+```bash
+curl http://localhost:3001/health
+# → {"status":"ok","service":"smolseek-unlink"}
+```
+
+### 2) Configure service URL (optional)
+
+If the service runs on a different host/port, set:
+
+```bash
+export UNLINK_SERVICE_URL=http://your-host:3001
+```
+
+Default: `http://localhost:3001`
+
+### 3) Make scripts executable
+
+```bash
+chmod +x scripts/*.sh
+```
+
+## Tools
+
+### unlink-status.sh — Service health + escrow summary
+
+```bash
+scripts/unlink-status.sh
+```
+
+Checks service health, displays escrow address and MON balance. Use this as the first call to verify everything is working.
+
+### unlink-address.sh — Get escrow address
+
+```bash
+scripts/unlink-address.sh
+```
+
+Returns the raw Unlink escrow wallet address. Use when telling a player where to send funds.
+
+### unlink-balance.sh — Check MON balance
+
+```bash
+# Simple balance (wei)
+scripts/unlink-balance.sh
+
+# Combined pool info (address + balance)
+scripts/unlink-balance.sh --pool
+```
+
+### unlink-bid-verify.sh — Verify a private bid
+
+```bash
+scripts/unlink-bid-verify.sh \
+  --relay-id 0xabc123... \
+  --player-id player_1 \
+  --cache-id cache_2 \
+  --round 1
+```
+
+Verifies that a player's private bid actually landed in escrow. This may take up to 30 seconds as the service polls the Unlink relay for confirmation.
+
+**Required args:** `--relay-id`, `--player-id`, `--cache-id`
+**Optional args:** `--round` (defaults to 0)
+
+### unlink-bid-list.sh — List bids for a round
+
+```bash
+scripts/unlink-bid-list.sh <round>
+```
+
+Returns all confirmed bids for the given round, sorted by amount descending (highest bidder first).
+
+### unlink-distribute.sh — Send winnings
+
+```bash
+scripts/unlink-distribute.sh \
+  --recipient 0xdef456... \
+  --amount 1000000000000000000 \
+  --round 1
+```
+
+Sends MON tokens from escrow to the winner. Includes double-send protection — if a distribution has already been made for this round+recipient, it returns an error instead of sending again.
+
+**Required args:** `--recipient`, `--amount` (in wei)
+**Optional args:** `--round` (defaults to 0)
+
+### unlink-pool.sh — Game pool info
+
+```bash
+scripts/unlink-pool.sh
+```
+
+Returns combined escrow address and balance as JSON. Convenience wrapper for agents needing the full pool state.
+
+## References
+
+- [API Endpoints](references/api-endpoints.md) — REST endpoint reference with request/response schemas
+- [Unlink SDK](references/unlink-sdk.md) — `@unlink-xyz/node` SDK reference
+
+## Notes
+
+- All amounts are in **wei** (18 decimals). 1 MON = 1000000000000000000 wei.
+- The escrow wallet is persisted in `escrow.db` (SQLite) alongside the service.
+- Bid and distribution records are stored in `bids.db` (SQLite).
+- For privacy safety: never commit `.env` files or database files to git.
