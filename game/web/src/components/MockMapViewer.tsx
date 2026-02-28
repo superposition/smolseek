@@ -255,7 +255,7 @@ export default function MockMapViewer({
         patrol.y + Math.sin(patrol.angle) * coneLen,
       );
       cone.rotation.x = Math.PI / 2;
-      cone.rotation.y = patrol.angle - Math.PI / 2;
+      cone.rotation.y = Math.PI / 2 - patrol.angle;
 
       // Add scan points every other frame to reduce churn
       if (frameCount % 2 === 0) {
