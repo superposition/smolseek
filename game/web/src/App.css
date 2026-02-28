@@ -1,0 +1,547 @@
+/* smolseek — Unlink design language */
+
+@font-face {
+  font-family: "Geist Sans";
+  src: url("/fonts/Geist-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --bg: #020204;
+  --surface: #0a0a0c;
+  --surface2: #111114;
+  --border: rgba(228, 228, 231, 0.1);
+  --text: #e4e4e7;
+  --muted: rgba(228, 228, 231, 0.5);
+  --accent-bg: #e4e4e7;
+  --accent-text: #0a0a0a;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: "Geist Sans", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  letter-spacing: -0.04em;
+}
+
+#root { width: 100vw; height: 100vh; }
+
+/* ---- App Layout ---- */
+.app {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  height: 48px;
+  flex-shrink: 0;
+}
+
+.app-header h1 {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--text);
+  letter-spacing: -0.04em;
+}
+
+.conn-badge {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 0.55rem;
+  font-weight: 500;
+}
+.conn-badge.connected { background: rgba(228, 228, 231, 0.1); color: var(--text); }
+.conn-badge.disconnected { background: rgba(228, 228, 231, 0.05); color: var(--muted); }
+
+.app-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.map-container {
+  flex: 1;
+  position: relative;
+}
+
+.side-panel {
+  width: 320px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+/* ---- Panels ---- */
+.panel {
+  padding: 1rem;
+  background: var(--surface2);
+}
+
+.panel h3 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+}
+
+/* ---- Round Info ---- */
+.round-info {
+  text-align: center;
+}
+
+.phase-badge {
+  display: inline-block;
+  padding: 0.2rem 0.8rem;
+  border-radius: 0.55rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  background: rgba(228, 228, 231, 0.1);
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.round-counter {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.countdown {
+  margin: 0.5rem 0;
+}
+
+.countdown-num {
+  font-size: 2rem;
+  font-weight: 500;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.countdown-label {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-left: 2px;
+}
+
+.status-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+
+/* ---- Wallet ---- */
+.wallet-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.wallet-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.wallet-row .label { color: var(--muted); }
+.wallet-row .mono { font-family: "Geist Mono", monospace; font-size: 0.8rem; }
+.wallet-row .balance { color: var(--text); font-weight: 500; }
+
+.connection-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 0.5rem;
+}
+.connection-dot.connected { background: var(--text); }
+
+/* ---- Inputs ---- */
+.input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  color: var(--text);
+  font-size: 0.875rem;
+  font-family: inherit;
+  letter-spacing: -0.04em;
+  outline: none;
+}
+
+.input:focus { border-color: rgba(228, 228, 231, 0.3); }
+
+/* ---- Buttons ---- */
+.btn {
+  width: 100%;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 0.55rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: inherit;
+  letter-spacing: -0.04em;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: opacity 0.15s;
+}
+
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-primary {
+  background: var(--accent-bg);
+  color: var(--accent-text);
+}
+
+.btn-start {
+  background: var(--accent-bg);
+  color: var(--accent-text);
+  font-size: 0.875rem;
+  padding: 0.75rem 1.5rem;
+}
+
+.btn-bid {
+  background: var(--accent-bg);
+  color: var(--accent-text);
+}
+
+.btn-bid.pending {
+  opacity: 0.6;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.9; }
+}
+
+/* ---- Bid Panel ---- */
+.bid-status.muted { color: var(--muted); font-size: 0.85rem; }
+
+.selected-cache {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background: rgba(228, 228, 231, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  margin-bottom: 0.75rem;
+}
+
+.cache-name { font-weight: 500; color: var(--text); }
+.cache-value { color: var(--muted); }
+
+.amount-input { margin-bottom: 0.5rem; }
+.amount-input label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-bottom: 0.25rem;
+}
+
+.bid-result {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text);
+  padding: 0.4rem;
+  background: rgba(228, 228, 231, 0.05);
+  border-radius: 0.55rem;
+}
+
+/* ---- Leaderboard ---- */
+.lb-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.lb-row {
+  display: flex;
+  align-items: center;
+  padding: 0.4rem 0.5rem;
+  border-radius: 0.55rem;
+  font-size: 0.85rem;
+}
+
+.lb-row.lb-me { background: rgba(228, 228, 231, 0.08); }
+
+.lb-rank {
+  width: 2rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.lb-name {
+  flex: 1;
+  font-weight: 500;
+}
+
+.lb-you { color: var(--muted); font-size: 0.75rem; }
+
+.lb-score {
+  font-family: "Geist Mono", monospace;
+  font-size: 0.8rem;
+  color: var(--text);
+}
+
+/* ---- Transaction Status ---- */
+.tx-status-panel .tx-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.tx-row {
+  padding: 0.5rem 0.6rem;
+  background: rgba(228, 228, 231, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  transition: border-color 0.3s;
+}
+
+.tx-row.tx-confirmed { border-color: rgba(120, 220, 140, 0.25); }
+.tx-row.tx-failed { border-color: rgba(220, 120, 120, 0.25); }
+
+.tx-row-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.tx-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.tx-elapsed {
+  font-family: "Geist Mono", monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.tx-row-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tx-id {
+  font-family: "Geist Mono", monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.tx-phase-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.5rem;
+  border-radius: 0.4rem;
+  background: rgba(228, 228, 231, 0.08);
+  color: var(--muted);
+}
+
+.tx-phase-confirmed {
+  background: rgba(120, 220, 140, 0.12);
+  color: rgba(120, 220, 140, 0.9);
+}
+
+.tx-phase-failed {
+  background: rgba(220, 120, 120, 0.12);
+  color: rgba(220, 120, 120, 0.9);
+}
+
+.tx-spinner {
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid var(--muted);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: tx-spin 0.8s linear infinite;
+}
+
+@keyframes tx-spin {
+  to { transform: rotate(360deg); }
+}
+
+.tx-error {
+  margin-top: 0.3rem;
+  font-size: 0.7rem;
+  color: rgba(220, 120, 120, 0.9);
+}
+
+/* ---- Cache Card ---- */
+.cache-card {
+  padding: 0.6rem 0.75rem;
+  background: rgba(228, 228, 231, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  transition: border-color 0.2s;
+}
+
+.cache-card.cache-selected { border-color: rgba(228, 228, 231, 0.3); }
+.cache-card.cache-collected { opacity: 0.5; }
+
+.cache-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.3rem;
+}
+
+.cache-card-id {
+  font-weight: 500;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.cache-card-value {
+  font-family: "Geist Mono", monospace;
+  font-size: 0.8rem;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.cache-card-bottom {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.cache-card-coords {
+  font-family: "Geist Mono", monospace;
+}
+
+.cache-card-status {
+  font-weight: 500;
+}
+
+.cache-card-status.collected { color: rgba(220, 120, 120, 0.8); }
+.cache-card-status.available { color: rgba(120, 220, 140, 0.8); }
+
+/* ---- Escrow Pool ---- */
+.escrow-pool {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.escrow-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.escrow-label { color: var(--muted); }
+
+.escrow-value {
+  font-family: "Geist Mono", monospace;
+  font-size: 0.8rem;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.escrow-address {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.escrow-copy {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.3rem;
+  transition: color 0.15s;
+}
+.escrow-copy:hover { color: var(--text); }
+
+/* ---- Connection Badge ---- */
+.conn-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.conn-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.conn-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.conn-dot.ok { background: rgba(120, 220, 140, 0.9); }
+.conn-dot.err { background: rgba(220, 120, 120, 0.9); }
+.conn-dot.warn { background: rgba(220, 200, 100, 0.9); }
+
+.conn-name {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+/* ---- Spectator ---- */
+.spectator-view {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.spectator-map {
+  width: 100%;
+  height: 100%;
+}
+
+.spectator-overlay {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+}
+
+.spectator-result {
+  margin-top: 0.5rem;
+  padding: 0.5rem 1.5rem;
+  background: rgba(2, 2, 4, 0.7);
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--text);
+}
