@@ -5,6 +5,7 @@ import bidRouter from "./routes/bid.js";
 import distributeRouter from "./routes/distribute.js";
 import balanceRouter from "./routes/balance.js";
 import swapRouter from "./routes/swap.js";
+import liquidityRouter from "./routes/liquidity.js";
 
 const app = express();
 const PORT = parseInt(process.env.PORT ?? "3001", 10);
@@ -17,6 +18,7 @@ app.use("/bid", bidRouter);
 app.use("/distribute", distributeRouter);
 app.use("/balance", balanceRouter);
 app.use("/swap", swapRouter);
+app.use("/liquidity", liquidityRouter);
 
 // Health check
 app.get("/health", (_req, res) => {
@@ -57,6 +59,10 @@ async function main() {
     console.log(`  GET  /balance      - escrow balance`);
     console.log(`  POST /swap         - private token swap via Uniswap`);
     console.log(`  GET  /swap/tokens  - list available tokens`);
+    console.log(`  POST /liquidity/deploy - deploy a mintable ERC20`);
+    console.log(`  POST /liquidity/mint   - mint tokens`);
+    console.log(`  POST /liquidity/add    - add Uniswap V2 liquidity`);
+    console.log(`  GET  /liquidity/burner - burner wallet info`);
     console.log(`  GET  /sync         - re-sync incoming transfers`);
     console.log(`  GET  /escrow-address - escrow Unlink address`);
     console.log(`  GET  /health       - health check`);

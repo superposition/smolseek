@@ -181,6 +181,56 @@ Executes a private token swap via Uniswap V2 on Monad testnet. Tokens unshield f
 
 **Note:** The swap timeout is 120 seconds. Swap will only succeed if there is liquidity in the Uniswap pool for the token pair. Use WMON pairs for best liquidity.
 
+### unlink-burner.sh — Burner wallet info
+
+```bash
+skills/unlink/scripts/unlink-burner.sh
+```
+
+Shows the burner EOA address and native MON balance. The burner wallet is used for public on-chain operations (deploy, mint, add liquidity). Fund it via the Monad faucet before deploying contracts.
+
+### unlink-deploy-token.sh — Deploy a mintable ERC20
+
+```bash
+skills/unlink/scripts/unlink-deploy-token.sh \
+  --name "Test Token" \
+  --symbol "TEST" \
+  --supply 1000000000000000000000000
+```
+
+Deploys a new mintable ERC20 token on Monad testnet from the burner wallet. Anyone can call `mint()` on the deployed token (testnet only, no access control).
+
+**Required args:** `--name`, `--symbol`
+**Optional args:** `--supply` (initial supply in wei, minted to deployer, default: 0)
+
+### unlink-mint.sh — Mint tokens
+
+```bash
+skills/unlink/scripts/unlink-mint.sh \
+  --token 0x... \
+  --amount 1000000000000000000000 \
+  --to 0x...
+```
+
+Mints tokens on a previously deployed mintable ERC20.
+
+**Required args:** `--token`, `--amount` (in wei)
+**Optional args:** `--to` (recipient address, defaults to burner wallet)
+
+### unlink-add-liquidity.sh — Add Uniswap V2 liquidity
+
+```bash
+skills/unlink/scripts/unlink-add-liquidity.sh \
+  --token-a 0x... \
+  --token-b 0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A \
+  --amount-a 1000000000000000000000 \
+  --amount-b 1000000000000000000000
+```
+
+Adds liquidity to a Uniswap V2 pool on Monad testnet. Approves both tokens for the router, then calls `addLiquidity`. Creates the pair if it doesn't exist. The burner wallet must hold both tokens and native MON for gas.
+
+**Required args:** `--token-a`, `--token-b`, `--amount-a`, `--amount-b` (all amounts in wei)
+
 ## References
 
 - [API Endpoints](references/api-endpoints.md) — REST endpoint reference with request/response schemas

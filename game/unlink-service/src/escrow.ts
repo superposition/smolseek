@@ -1,6 +1,8 @@
 import { initUnlink, createSqliteStorage, waitForConfirmation } from "@unlink-xyz/node";
 import type { Unlink } from "@unlink-xyz/node";
-import { approve, contract } from "@unlink-xyz/core";
+import { approve, contract, DEFAULT_RPC_URLS } from "@unlink-xyz/core";
+import { Wallet, JsonRpcProvider, ContractFactory, Contract } from "ethers";
+import { MINTABLE_ERC20_ABI, MINTABLE_ERC20_BYTECODE } from "./contracts/MintableERC20.js";
 
 // Monad testnet token address (ERC20 available via faucet)
 export const MON_TOKEN = process.env.ESCROW_TOKEN ?? "0xaaa4e95d4da878baf8e10745fdf26e196918df6b";
@@ -122,4 +124,97 @@ export async function swap(
   });
 
   return { relayId: result.relayId };
+}
+
+// ── Burner wallet (public EOA for on-chain ops) ──────────────────────
+
+let burnerWallet: Wallet | null = null;
+
+export async function getBurnerWallet(): Promise<Wallet> {
+  if (burnerWallet) return burnerWallet;
+  const u = await getUnlink();
+  const privateKey = await u.burner.exportKey(0);
+  const provider = new JsonRpcProvider((DEFAULT_RPC_URLS as any)["monad-testnet"]);
+  burnerWallet = new Wallet(privateKey, provider);
+  return burnerWallet;
+}
+
+export async function getBurnerAddress(): Promise<string> {
+  const w = await getBurnerWallet();
+  return w.address;
+}
+
+export async function getBurnerBalance(): Promise<bigint> {
+  const w = await getBurnerWallet();
+  return w.provider!.getBalance(w.address);
+}
+
+// ── Deploy / Mint / Add Liquidity ────────────────────────────────────
+
+export async function deployToken(
+  name: string,
+  symbol: string,
+  initialSupply: bigint,
+): Promise<{ address: string; txHash: string }> {
+  const wallet = await getBurnerWallet();
+  const factory = new ContractFactory(MINTABLE_ERC20_ABI, MINTABLE_ERC20_BYTECODE, wallet);
+  const tx = await factory.deploy(name, symbol, initialSupply);
+  const receipt = await tx.deploymentTransaction()!.wait();
+  const address = await tx.getAddress();
+  return { address, txHash: receipt!.hash };
+}
+
+export async function mintToken(
+  tokenAddress: string,
+  to: string,
+  amount: bigint,
+): Promise<{ txHash: string }> {
+  const wallet = await getBurnerWallet();
+  const token = new Contract(
+    tokenAddress,
+    ["function mint(address to, uint256 amount)"],
+    wallet,
+  );
+  const tx = await token.mint(to, amount);
+  const receipt = await tx.wait();
+  return { txHash: receipt!.hash };
+}
+
+export async function addLiquidity(
+  tokenA: string,
+  tokenB: string,
+  amountA: bigint,
+  amountB: bigint,
+): Promise<{ txHash: string; liquidity: string }> {
+  const wallet = await getBurnerWallet();
+
+  // Approve both tokens for the V2 router
+  const erc20Abi = ["function approve(address spender, uint256 amount) returns (bool)"];
+  const tA = new Contract(tokenA, erc20Abi, wallet);
+  const tB = new Contract(tokenB, erc20Abi, wallet);
+  await (await tA.approve(UNISWAP_V2_ROUTER, amountA)).wait();
+  await (await tB.approve(UNISWAP_V2_ROUTER, amountB)).wait();
+
+  // Add liquidity
+  const router = new Contract(
+    UNISWAP_V2_ROUTER,
+    [
+      "function addLiquidity(address tokenA, address tokenB, uint256 amountADesired, uint256 amountBDesired, uint256 amountAMin, uint256 amountBMin, address to, uint256 deadline) returns (uint256 amountA, uint256 amountB, uint256 liquidity)",
+    ],
+    wallet,
+  );
+
+  const deadline = BigInt(Math.floor(Date.now() / 1000) + 600);
+  const tx = await router.addLiquidity(
+    tokenA,
+    tokenB,
+    amountA,
+    amountB,
+    0n, // amountAMin — no slippage protection for testnet
+    0n, // amountBMin
+    wallet.address,
+    deadline,
+  );
+  const receipt = await tx.wait();
+  return { txHash: receipt!.hash, liquidity: "minted" };
 }
