@@ -1,12 +1,13 @@
 ---
 name: unlink
 description: >
-  Privacy-preserving payment operations for the smolseek game on Monad testnet.
+  Privacy-preserving payment and DeFi operations for the smolseek game on Monad testnet.
   Use this skill to interact with the Unlink escrow service: check escrow health
   and balance, verify private bids from players, list confirmed bids per round,
-  and distribute winnings to winners. All transactions use ZK proofs via the
-  Unlink protocol — sender, amount, and recipient are hidden on-chain.
-  Requires the unlink-service to be running (default localhost:3001).
+  distribute winnings to winners, and execute private token swaps via Uniswap.
+  All transactions use ZK proofs via the Unlink protocol — sender, amount, and
+  recipient are hidden on-chain. Requires the unlink-service to be running
+  (default localhost:3001).
 metadata:
   clawdbot:
     emoji: "\U0001F510"
@@ -38,6 +39,8 @@ This skill wraps the smolseek Unlink escrow service (`game/unlink-service/`) as 
 - **Bid listing**: list all confirmed bids for a game round, sorted by amount
 - **Prize distribution**: send winnings from escrow to a winner's address (with double-send protection)
 - **Pool info**: get combined escrow address + balance in one call
+- **Token listing**: list available tokens for swapping
+- **Private swaps**: execute atomic unshield → swap → reshield via Uniswap V2 (no one sees what was swapped)
 
 ## Setup
 
@@ -69,7 +72,7 @@ Default: `http://localhost:3001`
 ### 3) Make scripts executable
 
 ```bash
-chmod +x scripts/*.sh
+chmod +x skills/unlink/scripts/*.sh
 ```
 
 ## Tools
@@ -77,7 +80,7 @@ chmod +x scripts/*.sh
 ### unlink-status.sh — Service health + escrow summary
 
 ```bash
-scripts/unlink-status.sh
+skills/unlink/scripts/unlink-status.sh
 ```
 
 Checks service health, displays escrow address and MON balance. Use this as the first call to verify everything is working.
@@ -85,7 +88,7 @@ Checks service health, displays escrow address and MON balance. Use this as the 
 ### unlink-address.sh — Get escrow address
 
 ```bash
-scripts/unlink-address.sh
+skills/unlink/scripts/unlink-address.sh
 ```
 
 Returns the raw Unlink escrow wallet address. Use when telling a player where to send funds.
@@ -94,16 +97,16 @@ Returns the raw Unlink escrow wallet address. Use when telling a player where to
 
 ```bash
 # Simple balance (wei)
-scripts/unlink-balance.sh
+skills/unlink/scripts/unlink-balance.sh
 
 # Combined pool info (address + balance)
-scripts/unlink-balance.sh --pool
+skills/unlink/scripts/unlink-balance.sh --pool
 ```
 
 ### unlink-bid-verify.sh — Verify a private bid
 
 ```bash
-scripts/unlink-bid-verify.sh \
+skills/unlink/scripts/unlink-bid-verify.sh \
   --relay-id 0xabc123... \
   --player-id player_1 \
   --cache-id cache_2 \
@@ -118,7 +121,7 @@ Verifies that a player's private bid actually landed in escrow. This may take up
 ### unlink-bid-list.sh — List bids for a round
 
 ```bash
-scripts/unlink-bid-list.sh <round>
+skills/unlink/scripts/unlink-bid-list.sh <round>
 ```
 
 Returns all confirmed bids for the given round, sorted by amount descending (highest bidder first).
@@ -126,7 +129,7 @@ Returns all confirmed bids for the given round, sorted by amount descending (hig
 ### unlink-distribute.sh — Send winnings
 
 ```bash
-scripts/unlink-distribute.sh \
+skills/unlink/scripts/unlink-distribute.sh \
   --recipient 0xdef456... \
   --amount 1000000000000000000 \
   --round 1
@@ -140,7 +143,7 @@ Sends MON tokens from escrow to the winner. Includes double-send protection — 
 ### unlink-sync.sh — Sync incoming transfers
 
 ```bash
-scripts/unlink-sync.sh
+skills/unlink/scripts/unlink-sync.sh
 ```
 
 Re-scans the Unlink relay for incoming transfers. Call this after sending tokens to the escrow from an external wallet (e.g. `unlink-cli send`) to ensure the balance is up to date.
@@ -148,10 +151,35 @@ Re-scans the Unlink relay for incoming transfers. Call this after sending tokens
 ### unlink-pool.sh — Game pool info
 
 ```bash
-scripts/unlink-pool.sh
+skills/unlink/scripts/unlink-pool.sh
 ```
 
 Returns combined escrow address and balance as JSON. Convenience wrapper for agents needing the full pool state.
+
+### unlink-tokens.sh — List available tokens
+
+```bash
+skills/unlink/scripts/unlink-tokens.sh
+```
+
+Lists all tokens available for swapping on Monad testnet, including their address, symbol, and decimals.
+
+### unlink-swap.sh — Execute a private token swap
+
+```bash
+skills/unlink/scripts/unlink-swap.sh \
+  --token-in 0xaaa4e95d4da878baf8e10745fdf26e196918df6b \
+  --token-out 0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A \
+  --amount-in 1000000000000000000 \
+  --min-out 0
+```
+
+Executes a private token swap via Uniswap V2 on Monad testnet. Tokens unshield from the privacy pool, swap atomically through Uniswap, and output tokens reshield back into the pool. No one sees what was swapped.
+
+**Required args:** `--token-in`, `--token-out`, `--amount-in` (in wei)
+**Optional args:** `--min-out` (minimum output amount in wei, defaults to 0)
+
+**Note:** The swap timeout is 120 seconds. Swap will only succeed if there is liquidity in the Uniswap pool for the token pair. Use WMON pairs for best liquidity.
 
 ## References
 
